@@ -12,13 +12,14 @@ Labels = cat(2,Labels1Stroke,Labels2Stroke);
 
 
 k = 10; %used for k-fold selection
-d = 2; %used to reduce the number of data points per stroke
+d = 25; %used to reduce the number of data points per stroke
 n = 50; % number of data points per stroke
-d_max = 5e6; % max evaluation of the distance in DTW 
-KNN = 3; %number of k nearest neighbours
+d_max = 5e2; % max evaluation of the distance in DTW 
+KNN = 1; %number of k nearest neighbours
 N = size(Chars,1);
 Indices = crossvalind('Kfold',N,k);
-
+total_accuracy = 0;
+f_score = 0;
 
 for i = 1:k
     %select partitions for each for cycle
@@ -26,6 +27,9 @@ for i = 1:k
     testLabel = Labels(:,(Indices == i));
     trainingData = Chars((Indices ~= i),:,:);
     testData = Chars((Indices == i),:,:);
+    
+    tic;
+    
     trainingData = Decimate(trainingData,size(trainingData,3)/n,d);
     testData     = Decimate(testData,size(testData,3)/n,d);
     for j = 1:size(trainingData,1)
@@ -37,9 +41,12 @@ for i = 1:k
         %test(j,:,:) = Centralize(reshape(test(j,:,:),[size(test,2),size(test,3)]));
     end
     
+     accuracy = 0;  
+     
     for j = 1:size(testData,1)
         test = reshape(testData_new(j,:,:),[size(testData_new,2),size(testData_new,3)]);
         dist = zeros(1, size(trainingData,1));
+        %prediction = zeros(1, size(testData,1));
         for jj = 1:size(trainingData,1)
             training = reshape(trainingData_new(jj,:,:),[size(trainingData_new,2),size(trainingData_new,3)]);
             [dist(jj),distM] = DtwDistance(test,training, d_max);
@@ -49,11 +56,21 @@ for i = 1:k
         dist = dist(:,1:KNN);
         idx = idx(:,1:KNN);
         %majority vote
-        prediction = mode(trainingLabel(idx),2);
-        X = ['prediction for ',num2str(testLabel(j)),'is: ', num2str(prediction)];
-        disp(X)
-    end
+        prediction(j) = mode(trainingLabel(idx),2);
+       % X = ['prediction for ',num2str(testLabel(j)),'is: ', num2str(prediction(j))];
+       %disp(X)
+        accuracy = accuracy + (prediction(j) == testLabel(j));
+    end    
+    timer(i) = toc; 
+    total_accuracy = total_accuracy + (accuracy)/size(testData,1);
+    f_score = f_score + f1score(prediction,testLabel);
 end
+    total_accuracy = total_accuracy / k;
+    f_score = f_score/k;
+    display(['accuracy: %',num2str(total_accuracy)]);
+    display(['mean f1 score: ',num2str(f_score)]);
+    display(['mean elapsed time: ', num2str(mean(timer)),' seconds']);
+    
 
 
 
