@@ -4,10 +4,18 @@ function [StrokeTable_new]=Decimate(StrokeTable,N,d)
 %number of data points per stroke. With this function you can
 %preprocess character tables 
 
-n=size(StrokeTable,3)/N;
+% n=size(StrokeTable,3)/N;
+% keep=floor(1+mod(n,d)/2):d:n;
+% for i=1:N-1
+%   keep=[keep,n*i+keep];
+% end
+% StrokeTable_new=StrokeTable(:,:,keep);
+% end
+
+n=size(StrokeTable,2)/N;
 keep=floor(1+mod(n,d)/2):d:n;
 for i=1:N-1
   keep=[keep,n*i+keep];
 end
-StrokeTable_new=StrokeTable(:,:,keep);
+StrokeTable_new=StrokeTable(:,keep,:);
 end
